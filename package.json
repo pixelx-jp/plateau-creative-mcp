@@ -1,6 +1,6 @@
 {
   "name": "@yodolabs/plateau-creative-mcp",
-  "version": "0.1.1",
+  "version": "0.1.2",
   "mcpName": "io.github.pixelx-jp/plateau-creative-mcp",
   "description": "MCP server exposing PLATEAU 3D city data as scene-editing and glTF export tools for creative LLM agents.",
   "license": "MIT",
