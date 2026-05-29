@@ -1,0 +1,20 @@
+{
+  "$schema": "https://static.modelcontextprotocol.io/schemas/2025-12-11/server.schema.json",
+  "name": "io.github.pixelx-jp/plateau-creative-mcp",
+  "description": "Turn Project PLATEAU's 3D city data into scene-editing and glTF export tools for creative LLM agents.",
+  "repository": {
+    "url": "https://github.com/pixelx-jp/plateau-creative-mcp",
+    "source": "github"
+  },
+  "version": "0.1.1",
+  "packages": [
+    {
+      "registryType": "npm",
+      "identifier": "@yodolabs/plateau-creative-mcp",
+      "version": "0.1.1",
+      "transport": {
+        "type": "stdio"
+      }
+    }
+  ]
+}
