@@ -29,10 +29,7 @@ function sha256Hex(buf: Buffer): string {
 }
 
 /** A fetch impl serving an index JSON and the fixture bundle bytes. */
-function makeFetch(
-  index: unknown,
-  opts: { bundleStatus?: number; indexStatus?: number } = {},
-) {
+function makeFetch(index: unknown, opts: { bundleStatus?: number; indexStatus?: number } = {}) {
   const calls: string[] = [];
   const impl = (async (input: string | URL) => {
     const url = String(input);
