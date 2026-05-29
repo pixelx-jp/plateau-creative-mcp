@@ -1,0 +1,87 @@
+version: 1
+
+# Registry manifest for https://smithery.ai
+# Run: `npx -y @smithery/cli@latest install plateau-creative` once published.
+
+name: plateau-creative
+displayName: PLATEAU Creative MCP
+description: >
+  Turn Project PLATEAU's 3D city data into scene-editing and glTF export tools
+  for creative LLM agents. Load a Tokyo neighbourhood, delete every skyscraper,
+  scale a block 3x, export a .glb ready for Blender / Unity / Unreal — all over
+  the Model Context Protocol.
+homepage: https://github.com/pixelx-jp/plateau-creative-mcp
+license: MIT
+keywords:
+  - plateau
+  - citygml
+  - 3d
+  - gltf
+  - tokyo
+  - geospatial
+  - blender
+  - unity
+  - unreal
+  - creative
+
+startCommand:
+  type: stdio
+  command: npx
+  args:
+    - -y
+    - "@yodolabs/plateau-creative-mcp"
+  env:
+    PLATEAU_AUTO_DOWNLOAD:
+      description: >
+        When "true", load_area auto-fetches a missing city from the artifact
+        index before loading — zero manual setup. Otherwise call download_area first.
+      required: false
+      default: "false"
+    PLATEAU_ARTIFACT_DIR:
+      description: >
+        Directory holding out_<city>/buildings.parquet. Defaults to a local
+        cache dir that download_area writes into; set it to point at an
+        existing plateau-bridge checkout instead.
+      required: false
+    PLATEAU_ARTIFACT_INDEX_URL:
+      description: >
+        Cache index (JSON) listing each city's prebuilt bundle URL + sha256.
+        Defaults to the public plateau-bridge mirror.
+      required: false
+    PLATEAU_OUTPUT_DIR:
+      description: Where .glb / LICENSE.txt / manifests are written.
+      required: false
+      default: ./out
+    PLATEAU_DATA_MODE:
+      description: artifact (TS + duckdb, default) or subprocess (Python helper).
+      required: false
+      default: artifact
+    OSM_OVERPASS_URL:
+      description: Set to enable link_buildings_to_pois (e.g. https://overpass-api.de/api/interpreter).
+      required: false
+
+tools:
+  - name: download_area
+    description: Fetch + cache a prebuilt city bundle from the plateau-bridge index (no data clone needed).
+  - name: load_area
+    description: Load a city + bbox + LOD into a new scene_id.
+  - name: filter_buildings
+    description: Query buildings inside a scene by height / year / use / zoning / flood depth.
+  - name: delete_buildings
+    description: Mark buildings as deleted within a scene.
+  - name: extrude_buildings
+    description: Scale building heights by a factor.
+  - name: compose_scene
+    description: Set render-time hints (time of day, weather, camera).
+  - name: export_glb
+    description: Emit a .glb (single_glb) or scene_manifest referencing 3D Tiles.
+  - name: link_buildings_to_pois
+    description: Associate buildings with nearby OSM POIs (requires OSM_OVERPASS_URL).
+  - name: get_attribution
+    description: Full dataset / license / URL metadata for a scene.
+  - name: render_via_blender
+    description: Export the scene as GLB and optionally bridge to a BlenderMCP-compatible server (dry-run returns the call sequence).
+
+attribution: >
+  Data: © Project PLATEAU / MLIT (CC BY 4.0). OSM POIs: ODbL 1.0.
+  Software: MIT.

@@ -1,0 +1,23 @@
+// Drop this into your Claude Desktop config (~/Library/Application Support/Claude/claude_desktop_config.json on macOS).
+// Restart Claude after editing.
+{
+  "mcpServers": {
+    "plateau-creative": {
+      "command": "npx",
+      "args": ["-y", "@yodolabs/plateau-creative-mcp"],
+      "env": {
+        "PLATEAU_ARTIFACT_DIR": "/Users/you/plateau-bridge",
+        "PLATEAU_OUTPUT_DIR": "/Users/you/plateau-out",
+        // Uncomment to enable OSM POI linking (link_buildings_to_pois):
+        // "OSM_OVERPASS_URL": "https://overpass-api.de/api/interpreter",
+        // Uncomment to route data access through Python (requires `pip install duckdb`):
+        // "PLATEAU_DATA_MODE": "subprocess",
+        // "PLATEAU_PYTHON_BIN": "/usr/bin/python3"
+      }
+    },
+    "blender-mcp": {
+      "command": "uvx",
+      "args": ["blender-mcp"]
+    }
+  }
+}

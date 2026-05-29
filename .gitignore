@@ -1,0 +1,27 @@
+# Dependencies & build output
+node_modules/
+dist/
+*.tsbuildinfo
+
+# Local env (only .env.example is committed)
+.env
+.env.local
+.env.*.local
+
+# Generated runtime output
+out/
+release-artifacts/
+.scene-store/
+*.log
+coverage/
+
+# Editor / OS / agent — never publish
+.claude/
+.vscode/
+.idea/
+.DS_Store
+
+# Internal-only docs (launch strategy, marketing drafts — not for the public repo)
+docs/PUBLISH.md
+docs/launch-comms.md
+docs/demo-script.md
