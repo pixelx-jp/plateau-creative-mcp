@@ -1,0 +1,11 @@
+{
+  "mcpServers": {
+    "plateau-creative": {
+      "command": "npx",
+      "args": ["-y", "@yodolabs/plateau-creative-mcp"],
+      "env": {
+        "PLATEAU_AUTO_DOWNLOAD": "true"
+      }
+    }
+  }
+}
