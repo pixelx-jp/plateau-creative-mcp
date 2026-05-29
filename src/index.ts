@@ -1,4 +1,5 @@
 #!/usr/bin/env node
+import { createRequire } from "node:module";
 import path from "node:path";
 import { fileURLToPath } from "node:url";
 import { AttributionWrapper } from "./attribution/AttributionWrapper.js";
@@ -88,7 +89,9 @@ async function main(): Promise<void> {
     timeoutMs: config.artifactDownloadTimeoutMs,
   });
 
+  const pkg = createRequire(import.meta.url)("../package.json") as { version: string };
   const server = new PlateauCreativeMcpServer({
+    serverVersion: pkg.version,
     deps: {
       sceneStore,
       dataAccess,
