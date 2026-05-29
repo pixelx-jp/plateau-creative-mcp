@@ -9,6 +9,7 @@
 
 **Project PLATEAU の 3D 都市データを、シーン編集と glTF エクスポートのツール群に変える MCP サーバー。クリエイティブな LLM エージェントのために。**
 
+[![npm](https://img.shields.io/npm/v/@yodolabs/plateau-creative-mcp.svg)](https://www.npmjs.com/package/@yodolabs/plateau-creative-mcp)
 [![License: MIT](https://img.shields.io/badge/License-MIT-blue.svg)](LICENSE)
 [![Data: CC BY 4.0](https://img.shields.io/badge/Data-CC%20BY%204.0-green.svg)](https://www.mlit.go.jp/plateau/)
 [![Node](https://img.shields.io/badge/node-%E2%89%A520-339933.svg)](package.json)

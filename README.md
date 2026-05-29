@@ -9,6 +9,7 @@
 
 **An MCP server that turns Project PLATEAU's 3D city data into scene-editing and glTF export tools for creative LLM agents.**
 
+[![npm](https://img.shields.io/npm/v/@yodolabs/plateau-creative-mcp.svg)](https://www.npmjs.com/package/@yodolabs/plateau-creative-mcp)
 [![License: MIT](https://img.shields.io/badge/License-MIT-blue.svg)](LICENSE)
 [![Data: CC BY 4.0](https://img.shields.io/badge/Data-CC%20BY%204.0-green.svg)](https://www.mlit.go.jp/plateau/)
 [![Node](https://img.shields.io/badge/node-%E2%89%A520-339933.svg)](package.json)
