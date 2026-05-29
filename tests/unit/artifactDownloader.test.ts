@@ -1,52 +1,36 @@
 import { createHash } from "node:crypto";
+import { readFileSync } from "node:fs";
 import fs from "node:fs/promises";
 import os from "node:os";
 import path from "node:path";
-import { zstdCompressSync } from "node:zlib";
-import * as tar from "tar";
+import { fileURLToPath } from "node:url";
 import { afterEach, beforeEach, describe, expect, it } from "vitest";
 import { ArtifactDownloader } from "../../src/data/ArtifactDownloader.js";
 import { AppError } from "../../src/errors/AppError.js";
 
 const INDEX_URL = "https://index.invalid/index.json";
 
-function sha256Hex(buf: Buffer): string {
-  return createHash("sha256").update(buf).digest("hex");
-}
+// Prebuilt fixture mirroring plateau-bridge's bundle layout: a zstd-compressed
+// tar with files at the root (buildings.parquet, manifest.json, plus
+// buildings.pmtiles + style/ noise to verify extraction filtering).
+// Committed as a binary so the test needs no zstd *compressor* — works on every
+// supported Node version (node:zlib zstd is Node 22.15+ only).
+const FIXTURE = readFileSync(
+  fileURLToPath(new URL("../fixtures/shibuya-bundle.tar.zst", import.meta.url)),
+);
+// Manifest baked into the fixture.
+const CITY = { slug: "shibuya", code: "13113", year: 2023 };
 
 let workRoot: string;
 let artifactRoot: string;
 
-/**
- * Build a `.tar.zst` bundle matching plateau-bridge's layout: files at the tar
- * root (buildings.parquet, manifest.json, style/…, buildings.pmtiles), zstd-compressed.
- */
-async function buildBundle(opts: { code: string; name: string; year: number }): Promise<Buffer> {
-  const stage = await fs.mkdtemp(path.join(workRoot, "stage-"));
-  await fs.writeFile(path.join(stage, "buildings.parquet"), "PAR1-fake-parquet-data");
-  await fs.writeFile(
-    path.join(stage, "manifest.json"),
-    JSON.stringify({ city_code: opts.code, city_name: opts.name, dataset_year: opts.year }),
-  );
-  // Extra files the MCP must NOT extract — present in real bundles.
-  await fs.writeFile(path.join(stage, "buildings.pmtiles"), "PMTILES-noise");
-  await fs.mkdir(path.join(stage, "style"), { recursive: true });
-  await fs.writeFile(path.join(stage, "style", "x.arrow"), "ARROW-noise");
-
-  const tarPath = path.join(stage, "bundle.tar");
-  await tar.create({ file: tarPath, cwd: stage }, [
-    "buildings.parquet",
-    "manifest.json",
-    "buildings.pmtiles",
-    "style",
-  ]);
-  return zstdCompressSync(await fs.readFile(tarPath));
+function sha256Hex(buf: Buffer): string {
+  return createHash("sha256").update(buf).digest("hex");
 }
 
-/** A fetch impl serving an index JSON and the bundle bytes it points at. */
+/** A fetch impl serving an index JSON and the fixture bundle bytes. */
 function makeFetch(
   index: unknown,
-  bundle: Buffer,
   opts: { bundleStatus?: number; indexStatus?: number } = {},
 ) {
   const calls: string[] = [];
@@ -59,13 +43,27 @@ function makeFetch(
       return new Response(JSON.stringify(index), { status });
     }
     const status = opts.bundleStatus ?? 200;
-    return new Response(status === 200 ? bundle : null, { status });
+    return new Response(status === 200 ? FIXTURE : null, { status });
   }) as unknown as typeof fetch;
   return { impl, calls };
 }
 
-function indexWith(entry: Record<string, unknown>) {
-  return { schema: 1, updated: "2026-01-01T00:00:00Z", cities: [entry] };
+function indexWith(overrides: Record<string, unknown> = {}) {
+  return {
+    schema: 1,
+    updated: "2026-01-01T00:00:00Z",
+    cities: [
+      {
+        city_code: CITY.code,
+        city_name: "Shibuya-ku",
+        dataset_year: CITY.year,
+        bundle_url: "https://cdn.invalid/plateau-13113-2023-v1.tar.zst",
+        sha256: sha256Hex(FIXTURE),
+        bytes: FIXTURE.length,
+        ...overrides,
+      },
+    ],
+  };
 }
 
 beforeEach(async () => {
@@ -79,25 +77,16 @@ afterEach(async () => {
 
 describe("ArtifactDownloader (index + zstd)", () => {
   it("resolves a slug via city_name, verifies sha256, and extracts only the needed files", async () => {
-    const bundle = await buildBundle({ code: "13113", name: "Shibuya-ku", year: 2023 });
-    const index = indexWith({
-      city_code: "13113",
-      city_name: "Shibuya-ku",
-      dataset_year: 2023,
-      bundle_url: "https://cdn.invalid/plateau-13113-2023-v1.tar.zst",
-      sha256: sha256Hex(bundle),
-      bytes: bundle.length,
-    });
-    const { impl } = makeFetch(index, bundle);
+    const { impl } = makeFetch(indexWith());
     const dl = new ArtifactDownloader({ artifactRoot, indexUrl: INDEX_URL, fetchImpl: impl });
 
     const result = await dl.download("shibuya");
 
     expect(result.cached).toBe(false);
     expect(result.sha256_verified).toBe(true);
-    expect(result.bytes_downloaded).toBe(bundle.length);
-    expect(result.dataset_year).toBe(2023);
-    expect(result.city_code).toBe("13113");
+    expect(result.bytes_downloaded).toBe(FIXTURE.length);
+    expect(result.dataset_year).toBe(CITY.year);
+    expect(result.city_code).toBe(CITY.code);
     expect(result.artifact_dir).toBe(path.join(artifactRoot, "out_shibuya"));
     await expect(
       fs.access(path.join(result.artifact_dir, "buildings.parquet")),
@@ -111,15 +100,7 @@ describe("ArtifactDownloader (index + zstd)", () => {
   });
 
   it("returns cached without re-fetching when the artifact already exists", async () => {
-    const bundle = await buildBundle({ code: "13113", name: "Shibuya-ku", year: 2023 });
-    const index = indexWith({
-      city_code: "13113",
-      city_name: "Shibuya-ku",
-      dataset_year: 2023,
-      bundle_url: "https://cdn.invalid/b.tar.zst",
-      sha256: sha256Hex(bundle),
-    });
-    const { impl, calls } = makeFetch(index, bundle);
+    const { impl, calls } = makeFetch(indexWith());
     const dl = new ArtifactDownloader({ artifactRoot, indexUrl: INDEX_URL, fetchImpl: impl });
 
     await dl.download("shibuya");
@@ -133,15 +114,7 @@ describe("ArtifactDownloader (index + zstd)", () => {
   });
 
   it("rejects a sha256 mismatch and leaves no artifact behind", async () => {
-    const bundle = await buildBundle({ code: "13113", name: "Shibuya-ku", year: 2023 });
-    const index = indexWith({
-      city_code: "13113",
-      city_name: "Shibuya-ku",
-      dataset_year: 2023,
-      bundle_url: "https://cdn.invalid/b.tar.zst",
-      sha256: "0".repeat(64),
-    });
-    const { impl } = makeFetch(index, bundle);
+    const { impl } = makeFetch(indexWith({ sha256: "0".repeat(64) }));
     const dl = new ArtifactDownloader({ artifactRoot, indexUrl: INDEX_URL, fetchImpl: impl });
 
     await expect(dl.download("shibuya")).rejects.toBeInstanceOf(AppError);
@@ -149,30 +122,14 @@ describe("ArtifactDownloader (index + zstd)", () => {
   });
 
   it("errors when the slug is not present in the index", async () => {
-    const bundle = await buildBundle({ code: "13113", name: "Shibuya-ku", year: 2023 });
-    const index = indexWith({
-      city_code: "13113",
-      city_name: "Shibuya-ku",
-      dataset_year: 2023,
-      bundle_url: "https://cdn.invalid/b.tar.zst",
-      sha256: sha256Hex(bundle),
-    });
-    const { impl } = makeFetch(index, bundle);
+    const { impl } = makeFetch(indexWith());
     const dl = new ArtifactDownloader({ artifactRoot, indexUrl: INDEX_URL, fetchImpl: impl });
 
     await expect(dl.download("kyoto")).rejects.toBeInstanceOf(AppError);
   });
 
   it("throws on an HTTP error fetching the bundle", async () => {
-    const bundle = await buildBundle({ code: "13113", name: "Shibuya-ku", year: 2023 });
-    const index = indexWith({
-      city_code: "13113",
-      city_name: "Shibuya-ku",
-      dataset_year: 2023,
-      bundle_url: "https://cdn.invalid/b.tar.zst",
-      sha256: sha256Hex(bundle),
-    });
-    const { impl } = makeFetch(index, bundle, { bundleStatus: 404 });
+    const { impl } = makeFetch(indexWith(), { bundleStatus: 404 });
     const dl = new ArtifactDownloader({ artifactRoot, indexUrl: INDEX_URL, fetchImpl: impl });
 
     await expect(dl.download("shibuya")).rejects.toBeInstanceOf(AppError);
@@ -184,18 +141,10 @@ describe("ArtifactDownloader (index + zstd)", () => {
   });
 
   it("honors a per-call index_url override", async () => {
-    const bundle = await buildBundle({ code: "01100", name: "Sapporo-shi", year: 2020 });
-    const index = indexWith({
-      city_code: "01100",
-      city_name: "Sapporo-shi",
-      dataset_year: 2020,
-      bundle_url: "https://cdn.invalid/sapporo.tar.zst",
-      sha256: sha256Hex(bundle),
-    });
-    const { impl, calls } = makeFetch(index, bundle);
+    const { impl, calls } = makeFetch(indexWith());
     const dl = new ArtifactDownloader({ artifactRoot, indexUrl: INDEX_URL, fetchImpl: impl });
 
-    await dl.download("sapporo", "https://mirror.invalid/custom-index.json");
+    await dl.download("shibuya", "https://mirror.invalid/custom-index.json");
     expect(calls[0]).toBe("https://mirror.invalid/custom-index.json");
   });
 });
