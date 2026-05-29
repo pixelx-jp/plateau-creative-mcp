@@ -1,7 +1,7 @@
 {
   "$schema": "https://static.modelcontextprotocol.io/schemas/2025-12-11/server.schema.json",
   "name": "io.github.pixelx-jp/plateau-creative-mcp",
-  "description": "Turn Project PLATEAU's 3D city data into scene-editing and glTF export tools for creative LLM agents.",
+  "description": "PLATEAU 3D city data as scene-editing and glTF export tools for creative LLM agents.",
   "repository": {
     "url": "https://github.com/pixelx-jp/plateau-creative-mcp",
     "source": "github"
