@@ -111,27 +111,26 @@ async function main(): Promise<void> {
   const upstreamEnabled = process.env.PLATEAU_UPSTREAM_ENABLED === "true";
 
   console.log(`spawning MCP server (artifactDir=${artifactDir}, upstream=${upstreamEnabled})...`);
-  const driver = new StdioMcpDriver(
-    "npx",
-    ["tsx", path.join(projectRoot, "src/index.ts")],
-    {
-      PLATEAU_ARTIFACT_DIR: artifactDir,
-      PLATEAU_UPSTREAM_ENABLED: upstreamEnabled ? "true" : "false",
-      PLATEAU_OUTPUT_DIR: path.join(projectRoot, "out"),
-    },
-  );
+  const driver = new StdioMcpDriver("npx", ["tsx", path.join(projectRoot, "src/index.ts")], {
+    PLATEAU_ARTIFACT_DIR: artifactDir,
+    PLATEAU_UPSTREAM_ENABLED: upstreamEnabled ? "true" : "false",
+    PLATEAU_OUTPUT_DIR: path.join(projectRoot, "out"),
+  });
 
   try {
     console.log("→ initialize");
-    const init = await driver.request<{ protocolVersion: string; capabilities: unknown; serverInfo: { name: string; version: string } }>(
-      "initialize",
-      {
-        protocolVersion: "2024-11-05",
-        capabilities: {},
-        clientInfo: { name: "inspector-smoke", version: "0.1" },
-      },
+    const init = await driver.request<{
+      protocolVersion: string;
+      capabilities: unknown;
+      serverInfo: { name: string; version: string };
+    }>("initialize", {
+      protocolVersion: "2024-11-05",
+      capabilities: {},
+      clientInfo: { name: "inspector-smoke", version: "0.1" },
+    });
+    console.log(
+      `  ← server ${init.serverInfo.name} v${init.serverInfo.version}, protocol ${init.protocolVersion}`,
     );
-    console.log(`  ← server ${init.serverInfo.name} v${init.serverInfo.version}, protocol ${init.protocolVersion}`);
     driver.notify("notifications/initialized");
 
     console.log("→ tools/list");
@@ -156,8 +155,11 @@ async function main(): Promise<void> {
     }
     if (upstreamEnabled) {
       const upstreamPresent = names.filter((n) => n.startsWith("plateau_")).length;
-      console.log(`  ← upstream plateau_*: ${upstreamPresent}/13 ${upstreamPresent === 13 ? "✓" : "✗"}`);
-      if (upstreamPresent !== 13) throw new Error(`expected 13 upstream tools, got ${upstreamPresent}`);
+      console.log(
+        `  ← upstream plateau_*: ${upstreamPresent}/13 ${upstreamPresent === 13 ? "✓" : "✗"}`,
+      );
+      if (upstreamPresent !== 13)
+        throw new Error(`expected 13 upstream tools, got ${upstreamPresent}`);
     }
 
     console.log("→ tools/call load_area shibuya");
@@ -169,7 +171,7 @@ async function main(): Promise<void> {
         lod: 2,
       },
     });
-    if (callResult.isError) throw new Error(`load_area returned isError`);
+    if (callResult.isError) throw new Error("load_area returned isError");
     const text = callResult.content[0]?.text;
     if (!text) throw new Error("load_area returned no text content");
     const envelope = JSON.parse(text) as {
