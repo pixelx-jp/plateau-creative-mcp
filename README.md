@@ -18,6 +18,13 @@
 
 </div>
 
+<p align="center">
+  <img src="docs/assets/hero-shibuya.png" width="100%"
+       alt="A real Shibuya block loaded from Project PLATEAU and exported by plateau-creative-mcp as a single .glb — hundreds of buildings as editable 3D geometry on a scene grid, ready for Blender / Unity / Unreal." />
+  <br/>
+  <sub>A real Shibuya block — loaded from PLATEAU, edited, and exported as one <code>.glb</code> by the <code>export_glb</code> tool, here rendered with three.js. Same geometry your LLM hands off to Blender / Unity / Unreal. Data © Project PLATEAU / MLIT (CC BY 4.0).</sub>
+</p>
+
 > This server exposes tools. Orchestration is your LLM's job — point Claude / Cursor / any MCP client at this server alongside Blender MCP / Unity MCP / Unreal MCP and let it compose the workflow.
 
 PLATEAU has an official MCP server for **data access** (catalog, specs, CityGML, attributes). This one fills the missing **creation, scene-editing, and DCC export** layer: load a Tokyo neighbourhood, delete every skyscraper, scale a block to 3× height, and emit a `.glb` ready for Blender / Unity / Unreal — all driven by tool calls.

@@ -18,6 +18,13 @@
 
 </div>
 
+<p align="center">
+  <img src="docs/assets/hero-shibuya.png" width="100%"
+       alt="Project PLATEAU から読み込んだ実際の渋谷の街区を、plateau-creative-mcp が単一の .glb として書き出したもの。数百棟の建物が編集可能な 3D ジオメトリとしてシーングリッド上に並び、Blender / Unity / Unreal にそのまま取り込める。" />
+  <br/>
+  <sub>実際の渋谷の街区——PLATEAU から読み込み、編集し、<code>export_glb</code> ツールで 1 つの <code>.glb</code> として書き出したもの（ここでは three.js で描画）。LLM が Blender / Unity / Unreal へ受け渡すのと同じジオメトリです。データ © Project PLATEAU / 国土交通省（CC BY 4.0）。</sub>
+</p>
+
 > このサーバーが提供するのは「ツール」です。それらをどう組み合わせて使うか（オーケストレーション）は LLM の仕事です。Claude / Cursor などお好みの MCP クライアントから、Blender MCP / Unity MCP / Unreal MCP と並べてこのサーバーを指定し、ワークフローを組み立てさせてください。
 
 PLATEAU には、データアクセス（カタログ・仕様・CityGML・属性）のための公式 MCP サーバーがあります。本サーバーは、そこに足りていない **「生成・シーン編集・DCC エクスポート」** のレイヤーを担います。東京のある街区を読み込み、高層ビルをすべて削除し、ある区画を 3 倍の高さに引き伸ばし、Blender / Unity / Unreal にそのまま取り込める `.glb` を書き出す——その一連を、すべてツール呼び出しで実現します。
