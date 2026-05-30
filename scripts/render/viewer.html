@@ -1,0 +1,168 @@
+<!doctype html>
+<html>
+<head>
+<meta charset="utf-8" />
+<style>
+  html, body { margin: 0; height: 100%; background: #0b0f1a; overflow: hidden; }
+  #c { display: block; }
+  #attr {
+    position: fixed; left: 16px; bottom: 12px;
+    font: 12px/1.4 -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+    color: rgba(255,255,255,.55); letter-spacing: .02em;
+    text-shadow: 0 1px 2px rgba(0,0,0,.6);
+  }
+  body.day #attr { color: rgba(20,28,40,.55); text-shadow: 0 1px 2px rgba(255,255,255,.5); }
+</style>
+<script type="importmap">
+{ "imports": {
+  "three": "/three/build/three.module.js",
+  "three/addons/": "/three/examples/jsm/"
+}}
+</script>
+</head>
+<body>
+<canvas id="c"></canvas>
+<div id="attr">Data © Project PLATEAU / MLIT &middot; CC BY 4.0 &nbsp;·&nbsp; rendered via @yodolabs/plateau-creative-mcp</div>
+<script type="module">
+import * as THREE from 'three';
+import { GLTFLoader } from 'three/addons/loaders/GLTFLoader.js';
+
+const params = new URLSearchParams(location.search);
+const glb = params.get('glb');
+const W = +params.get('w') || 1600;
+const H = +params.get('h') || 760;
+const style = params.get('style') || 'tech';            // 'tech' (dark) | 'day' (light)
+const fit = +params.get('fit') || 0.56;                 // <1 zooms in, >1 zooms out
+const azim = (+params.get('azim') || 45) * Math.PI / 180; // camera azimuth, degrees
+const elev = (+params.get('elev') || 33) * Math.PI / 180; // camera elevation, degrees
+const isDay = style === 'day';
+if (isDay) document.body.classList.add('day');
+
+const canvas = document.getElementById('c');
+const renderer = new THREE.WebGLRenderer({ canvas, antialias: true, preserveDrawingBuffer: true });
+renderer.setPixelRatio(Math.min(devicePixelRatio, 2));
+renderer.setSize(W, H);
+renderer.shadowMap.enabled = true;
+renderer.shadowMap.type = THREE.PCFSoftShadowMap;
+renderer.outputColorSpace = THREE.SRGBColorSpace;
+renderer.toneMapping = THREE.ACESFilmicToneMapping;
+renderer.toneMappingExposure = isDay ? 1.05 : 1.15;
+
+const scene = new THREE.Scene();
+
+// gradient sky background
+const skyTop = isDay ? new THREE.Color(0x9cc4ff) : new THREE.Color(0x0a1730);
+const skyBot = isDay ? new THREE.Color(0xeef4ff) : new THREE.Color(0x05070d);
+{
+  const c = document.createElement('canvas'); c.width = 2; c.height = 256;
+  const g = c.getContext('2d');
+  const grad = g.createLinearGradient(0, 0, 0, 256);
+  grad.addColorStop(0, `#${skyTop.getHexString()}`);
+  grad.addColorStop(1, `#${skyBot.getHexString()}`);
+  g.fillStyle = grad; g.fillRect(0, 0, 2, 256);
+  const tex = new THREE.CanvasTexture(c);
+  tex.colorSpace = THREE.SRGBColorSpace;
+  scene.background = tex;
+}
+scene.fog = new THREE.Fog(skyBot, 1, 8000);
+
+const camera = new THREE.PerspectiveCamera(38, W / H, 0.1, 100000);
+
+// lights
+const hemi = new THREE.HemisphereLight(
+  isDay ? 0xffffff : 0x88aaff,
+  isDay ? 0xbfcad6 : 0x0a1020,
+  isDay ? 1.0 : 0.7);
+scene.add(hemi);
+const sun = new THREE.DirectionalLight(isDay ? 0xfff3e0 : 0xbfd4ff, isDay ? 2.2 : 2.6);
+sun.castShadow = true;
+sun.shadow.mapSize.set(2048, 2048);
+sun.shadow.bias = -0.0004;
+scene.add(sun);
+if (!isDay) {
+  const fill = new THREE.DirectionalLight(0x4060c0, 0.8);
+  fill.position.set(-1, 0.4, -1);
+  scene.add(fill);
+}
+
+const loader = new GLTFLoader();
+loader.load(glb, (gltf) => {
+  const model = gltf.scene;
+
+  // unify building material so any PLATEAU geometry reads cleanly
+  const mat = new THREE.MeshStandardMaterial({
+    color: isDay ? 0xdfe4ea : 0x9fb3d6,
+    roughness: 0.82,
+    metalness: 0.0,
+  });
+  model.traverse((o) => {
+    if (o.isMesh) {
+      o.material = mat;
+      o.castShadow = true;
+      o.receiveShadow = true;
+      o.geometry.computeVertexNormals?.();
+    }
+  });
+  scene.add(model);
+
+  const box = new THREE.Box3().setFromObject(model);
+  const size = box.getSize(new THREE.Vector3());
+  const center = box.getCenter(new THREE.Vector3());
+  const maxDim = Math.max(size.x, size.z);
+  const sphere = box.getBoundingSphere(new THREE.Sphere());
+
+  // ground plane
+  const ground = new THREE.Mesh(
+    new THREE.PlaneGeometry(maxDim * 6, maxDim * 6),
+    new THREE.MeshStandardMaterial({ color: isDay ? 0xc8d0da : 0x070b14, roughness: 1 }));
+  ground.rotation.x = -Math.PI / 2;
+  ground.position.set(center.x, box.min.y, center.z);
+  ground.receiveShadow = true;
+  scene.add(ground);
+
+  // editor grid — signals this is an editable 3D scene, not a flat map
+  const cell = 50; // metres
+  const span = Math.ceil((maxDim * 2.2) / cell) * cell;
+  const grid = new THREE.GridHelper(span, span / cell,
+    isDay ? 0x8fa0b4 : 0x3f5a9a,
+    isDay ? 0xb8c2cf : 0x24365f);
+  grid.position.set(center.x, box.min.y + 0.5, center.z);
+  grid.material.transparent = true;
+  grid.material.opacity = isDay ? 0.55 : 0.9;
+  scene.add(grid);
+
+  // camera: oblique aerial view framed to the bounding sphere
+  const target = new THREE.Vector3(center.x, box.min.y + size.y * 0.5, center.z);
+  const fov = camera.fov * Math.PI / 180;
+  const fitDist = (sphere.radius / Math.sin(fov / 2)) * fit;
+  const dir = new THREE.Vector3(
+    Math.cos(elev) * Math.sin(azim),
+    Math.sin(elev),
+    Math.cos(elev) * Math.cos(azim)).normalize();
+  camera.position.copy(target).add(dir.multiplyScalar(fitDist));
+  camera.lookAt(target);
+  camera.near = fitDist / 100;
+  camera.far = fitDist * 10;
+  camera.updateProjectionMatrix();
+  scene.fog.near = fitDist * 0.6;
+  scene.fog.far = fitDist * 2.4;
+
+  // sun relative to scene
+  sun.position.set(center.x + maxDim, box.min.y + maxDim * 1.4, center.z + maxDim * 0.5);
+  sun.target.position.copy(center);
+  scene.add(sun.target);
+  const d = maxDim * 1.5;
+  sun.shadow.camera.left = -d; sun.shadow.camera.right = d;
+  sun.shadow.camera.top = d; sun.shadow.camera.bottom = -d;
+  sun.shadow.camera.near = 1; sun.shadow.camera.far = maxDim * 6;
+  sun.shadow.camera.updateProjectionMatrix();
+
+  renderer.render(scene, camera);
+  window.__rendered = true;
+}, undefined, (err) => {
+  document.body.innerHTML = `<pre style="color:#f88">${err}</pre>`;
+  window.__rendered = 'error';
+});
+</script>
+</body>
+</html>

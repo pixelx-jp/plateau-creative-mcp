@@ -45,6 +45,7 @@
     "smoke:export": "tsx scripts/smoke-export-glb.ts",
     "smoke:inspector": "tsx scripts/inspector-smoke.ts",
     "measure:compress": "tsx scripts/measure-compress.ts",
+    "render:glb": "tsx scripts/render-glb.ts",
     "test": "vitest run",
     "test:watch": "vitest",
     "typecheck": "tsc --noEmit",
@@ -70,6 +71,7 @@
     "@types/node": "^22.5.0",
     "@types/tar": "^6.1.13",
     "@types/three": "^0.169.0",
+    "playwright": "^1.60.0",
     "tsx": "^4.19.0",
     "typescript": "^5.6.0",
     "vitest": "^2.1.0"
