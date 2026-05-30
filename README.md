@@ -160,8 +160,6 @@ load_area(...)
 => SketchUp MCP: design a new building inside those parcels
 ```
 
-> **Demo video:** a 60-second walkthrough will be linked here at launch.
-
 ## Architecture
 
 ```
@@ -305,11 +303,9 @@ Reproducible workflow recipes live in [`examples/`](examples/) — Claude Deskto
 
 Issues and PRs are welcome — see [CONTRIBUTING.md](CONTRIBUTING.md). Run `npm run lint && npm run typecheck && npm test` before opening a PR.
 
-## Roadmap
+## What's included
 
-**Shipped in v0.1.0:** 10 own MCP tools + 13 proxied tools from the official PLATEAU MCP (combined 23-tool catalog when `PLATEAU_UPSTREAM_ENABLED=true`), on-demand artifact download (`download_area` + optional `load_area` auto-fetch) so no data clone is needed, polygon footprint extrusion (DuckDB `spatial`) with box fallback, mesh merging + sidecar identity index, GLB compression (~40% shrink), `scene_manifest` mode with 3D Tiles tile enrichment, Overpass POI linking, three data-access modes (TS+duckdb artifact / Python subprocess / upstream MCP-over-HTTP), and an allowlist-gated cross-MCP bridge to BlenderMCP-compatible servers.
-
-**Planned for v0.2:** recorded cross-MCP demos with BlenderMCP / Unity MCP / Unreal MCP.
+10 own MCP tools + 13 proxied tools from the official PLATEAU MCP (combined 23-tool catalog when `PLATEAU_UPSTREAM_ENABLED=true`), on-demand artifact download (`download_area` + optional `load_area` auto-fetch) so no data clone is needed, polygon footprint extrusion (DuckDB `spatial`) with box fallback, mesh merging + sidecar identity index, GLB compression (~40% shrink), `scene_manifest` mode with 3D Tiles tile enrichment, Overpass POI linking, three data-access modes (TS+duckdb artifact / Python subprocess / upstream MCP-over-HTTP), and an allowlist-gated cross-MCP bridge to BlenderMCP-compatible servers.
 
 ---
 

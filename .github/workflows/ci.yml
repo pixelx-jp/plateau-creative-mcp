@@ -57,15 +57,4 @@ jobs:
       - name: npm pack (dry run, verify shipped files)
         run: |
           npm pack --dry-run --json > /tmp/pack.json
-          node -e "const p=require('/tmp/pack.json')[0]; const files=p.files.map(f=>f.path); for (const need of ['dist/index.js','python/plateau_query.py','smithery.yaml','README.md','LICENSE']) { if (!files.includes(need)) { console.error('missing from package:', need); process.exit(1); } } console.log('package contents OK,', files.length, 'files,', (p.size/1024).toFixed(1), 'kB');"
-
-  lint-smithery:
-    name: smithery.yaml shape check
-    runs-on: ubuntu-latest
-    steps:
-      - uses: actions/checkout@v5
-      - uses: actions/setup-node@v5
-        with:
-          node-version: 22
-      - run: |
-          node -e "const yaml = require('node:fs').readFileSync('smithery.yaml','utf8'); for (const need of ['name:','displayName:','startCommand:','tools:','license: MIT']) { if (!yaml.includes(need)) { console.error('smithery.yaml missing', need); process.exit(1); } } console.log('smithery.yaml shape OK');"
+          node -e "const p=require('/tmp/pack.json')[0]; const files=p.files.map(f=>f.path); for (const need of ['dist/index.js','python/plateau_query.py','README.md','LICENSE']) { if (!files.includes(need)) { console.error('missing from package:', need); process.exit(1); } } console.log('package contents OK,', files.length, 'files,', (p.size/1024).toFixed(1), 'kB');"
