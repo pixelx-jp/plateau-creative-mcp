@@ -39,7 +39,10 @@ export class ArtifactDataAccess implements DataAccessLayer {
   private readonly enableSpatial: boolean;
   // Parsed manifests keyed by path, validated by mtime — loadArea reads the
   // same manifest.json on every request; reuse the parse unless it changed.
-  private readonly manifestCache = new Map<string, { mtimeMs: number; manifest: ArtifactManifest }>();
+  private readonly manifestCache = new Map<
+    string,
+    { mtimeMs: number; manifest: ArtifactManifest }
+  >();
 
   constructor(
     private readonly artifactRoot: string,
