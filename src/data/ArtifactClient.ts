@@ -37,6 +37,9 @@ export class ArtifactDataAccess implements DataAccessLayer {
   private spatialReady: boolean | null = null;
   private readonly poiSource: PoiSource | undefined;
   private readonly enableSpatial: boolean;
+  // Parsed manifests keyed by path, validated by mtime — loadArea reads the
+  // same manifest.json on every request; reuse the parse unless it changed.
+  private readonly manifestCache = new Map<string, { mtimeMs: number; manifest: ArtifactManifest }>();
 
   constructor(
     private readonly artifactRoot: string,
@@ -87,18 +90,26 @@ export class ArtifactDataAccess implements DataAccessLayer {
     return path.join(artifactDir, "buildings.parquet");
   }
 
-  async loadArea(input: LoadAreaQuery): Promise<LoadedArea> {
-    const artifactDir = this.resolveDir(input.city);
-    const manifestPath = path.join(artifactDir, "manifest.json");
-    let manifest: ArtifactManifest;
+  private async readManifest(manifestPath: string, city: string): Promise<ArtifactManifest> {
     try {
-      manifest = JSON.parse(await fs.readFile(manifestPath, "utf8")) as ArtifactManifest;
+      const stat = await fs.stat(manifestPath);
+      const cached = this.manifestCache.get(manifestPath);
+      if (cached && cached.mtimeMs === stat.mtimeMs) return cached.manifest;
+      const manifest = JSON.parse(await fs.readFile(manifestPath, "utf8")) as ArtifactManifest;
+      this.manifestCache.set(manifestPath, { mtimeMs: stat.mtimeMs, manifest });
+      return manifest;
     } catch (err: unknown) {
-      throw new AppError("PLATEAU_CORE_ERROR", `Failed to read manifest for city ${input.city}`, {
+      throw new AppError("PLATEAU_CORE_ERROR", `Failed to read manifest for city ${city}`, {
         manifestPath,
         cause: (err as Error).message,
       });
     }
+  }
+
+  async loadArea(input: LoadAreaQuery): Promise<LoadedArea> {
+    const artifactDir = this.resolveDir(input.city);
+    const manifestPath = path.join(artifactDir, "manifest.json");
+    const manifest = await this.readManifest(manifestPath, input.city);
     if (input.dataset_year && input.dataset_year !== manifest.dataset_year) {
       throw new AppError("PLATEAU_CORE_ERROR", "dataset_year mismatch with artifact", {
         requested: input.dataset_year,

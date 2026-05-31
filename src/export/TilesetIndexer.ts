@@ -12,6 +12,16 @@ interface Tileset {
   root?: TileNode;
 }
 
+// A 3D Tiles tileset.json can be 1–10 MB and is re-indexed on every export
+// (each with a different sceneBbox). The bbox-dependent walk is cheap; the
+// read + JSON.parse is the cost. Cache the parsed tree per path, validated by
+// mtime so a rebuilt tileset is picked up without serving stale data.
+interface CachedTileset {
+  mtimeMs: number;
+  parsed: Tileset;
+}
+const parsedTilesetCache = new Map<string, CachedTileset>();
+
 export interface TilesetTileEntry {
   uri: string;
   bbox: BBox;
@@ -84,16 +94,20 @@ export async function indexTileset(
   tilesetPath: string,
   sceneBbox: BBox,
 ): Promise<TilesetIndex | null> {
-  let raw: string;
-  try {
-    raw = await fs.readFile(tilesetPath, "utf8");
-  } catch {
-    return null;
-  }
   let parsed: Tileset;
   try {
-    parsed = JSON.parse(raw) as Tileset;
+    const key = path.resolve(tilesetPath);
+    const stat = await fs.stat(tilesetPath);
+    const cached = parsedTilesetCache.get(key);
+    if (cached && cached.mtimeMs === stat.mtimeMs) {
+      parsed = cached.parsed;
+    } else {
+      const raw = await fs.readFile(tilesetPath, "utf8");
+      parsed = JSON.parse(raw) as Tileset;
+      parsedTilesetCache.set(key, { mtimeMs: stat.mtimeMs, parsed });
+    }
   } catch {
+    // Missing file, read error, or malformed JSON — same as before: no index.
     return null;
   }
   const tiles: TilesetTileEntry[] = [];
