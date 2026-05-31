@@ -4,6 +4,14 @@ All notable changes to this project are documented here. The format follows
 [Keep a Changelog](https://keepachangelog.com/en/1.1.0/) and this project adheres
 to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [0.1.3] — 2026-05-31
+
+### Performance
+- `ArtifactDataAccess.loadArea` caches the parsed `manifest.json` per path
+  (mtime-validated) instead of re-reading + re-parsing it on every request.
+- `indexTileset` caches the parsed (1–10 MB) `tileset.json` per path by mtime;
+  the bbox-dependent walk still re-runs each call.
+
 ## [0.1.1]
 
 ### Added
